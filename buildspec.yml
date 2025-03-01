@@ -3,7 +3,7 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      java: corretto17 
+      java: corretto17 # Ou outra versão compatível
     commands:
       - echo "Instalando OWASP Dependency-Check..."
       - curl -sLO https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
@@ -14,7 +14,7 @@ phases:
     commands:
       - echo "Rodando análise de dependências..."
       - mkdir -p reports/
-      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey 39f09a33-692e-45c9-a2d5-0ecacc6848bf --nvdApiDelay 5000
+      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --disableUpdate
 
   post_build:
     commands:
