@@ -12,8 +12,6 @@ phases:
 
   build:
     commands:
-      - echo "Limpando banco de dados local..."
-      - dependency-check.sh --purge
       - echo "Rodando análise de dependências..."
       - mkdir -p reports/
       - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey 4a090b91-1ff3-46ec-96be-beaa3528f734 --nvdApiDelay 10000
