@@ -13,10 +13,9 @@ phases:
   build:
     commands:
       - echo "Rodando análise de dependências..."
-      - mkdir -p reports/
-      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --disableUpdate
+      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/
 
   post_build:
     commands:
-      - echo "Análise concluída! Verificando se o diretório reports/ existe..."
-      - if [ -d "reports/" ]; then aws s3 cp reports/ s3://laddevops/ --recursive; else echo "Diretório reports/ não encontrado."; fi
+      - echo "Análise concluída! Salvando resultados..."
+      - aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886/ --recursive
