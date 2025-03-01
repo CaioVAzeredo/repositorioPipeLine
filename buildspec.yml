@@ -12,11 +12,13 @@ phases:
 
   build:
     commands:
+      - echo "Limpando banco de dados local..."
+      - dependency-check.sh --purge
       - echo "Rodando análise de dependências..."
       - mkdir -p reports/
-      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey 4a090b91-1ff3-46ec-96be-beaa3528f734 --nvdApiDelay 5000
+      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey 4a090b91-1ff3-46ec-96be-beaa3528f734 --nvdApiDelay 10000
 
   post_build:
     commands:
-      - echo "Análise concluída! Salvando resultados..."
-      - aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886/ --recursive
+      - echo "Análise concluída! Verificando se o diretório reports/ existe..."
+      - if [ -d "reports/" ]; then aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886/ --recursive; else echo "Diretório reports/ não encontrado."; fi
