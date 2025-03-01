@@ -13,9 +13,9 @@ phases:
   build:
     commands:
       - echo "Rodando análise de dependências..."
-      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/
+      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey SUA_CHAVE_API_AQUI
 
   post_build:
     commands:
       - echo "Análise concluída! Salvando resultados..."
-      - aws s3 cp reports/ s3:/laddevops/ --recursive
+      - aws s3 cp reports/ s3://laddevops/ --recursive
