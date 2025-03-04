@@ -59,8 +59,7 @@ phases:
       - echo "Análise concluída! Salvando resultados..."  # Mensagem informativa
       - mkdir -p reports  # Garante que o diretório de relatórios existe
       - ls -lah reports/  # Lista os arquivos gerados para verificar se estão corretos
-      - aws s3 cp reports/ s3://laddevops-d --recursive || echo "Nenhum relatório encontrado para upload."  # Faz upload dos relatórios para um bucket S3
-
+      - aws s3 cp reports/ s3://laddevops/ --recursive
 artifacts:
   files:
     - '**/*'  # Inclui todos os arquivos e diretórios gerados
