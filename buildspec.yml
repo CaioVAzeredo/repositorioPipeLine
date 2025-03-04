@@ -56,11 +56,15 @@ phases:
     
   post_build:
     commands:
-      - echo "Análise concluída! Salvando resultados..."  # Mensagem informativa
-      - mkdir -p reports  # Garante que o diretório de relatórios existe
-      - ls -lah reports/  # Lista os arquivos gerados para verificar se estão corretos
-      - aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886 --recursive || echo "Nenhum relatório encontrado para upload."  # Faz upload dos relatórios para um bucket S3
-
+commands:
+      - echo "Análise concluída! Verificando se o diretório reports/ existe..."
+      - |
+        if [ -d "reports/" ]; then
+          echo "Enviando relatórios para o bucket S3..."
+          aws s3 cp reports/ s3://laddevops/reports/ --recursive
+        else
+          echo "AVISO: Diretório reports/ não encontrado. Nenhum relatório foi enviado para o S3."
+        fi
 artifacts:
   files:
     - '**/*'  # Inclui todos os arquivos e diretórios gerados
