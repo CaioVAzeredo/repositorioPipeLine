@@ -3,20 +3,54 @@ version: 0.2
 phases:
   install:
     runtime-versions:
-      java: corretto17 # Ou outra versão compatível
+      nodejs: 14
+      java: corretto17  
     commands:
+      - echo "Installing NPM dependencies..."
+      - npm install
       - echo "Instalando OWASP Dependency-Check..."
       - curl -sLO https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+      - yum install -y unzip || apt-get install -y unzip
       - unzip dependency-check-9.0.9-release.zip
-      - export PATH=$PATH:$(pwd)/dependency-check/bin
+      - echo "Verificando diretórios extraídos..."
+      - ls -R  # Mostra todos os arquivos extraídos para depuração
+      - echo "Dando permissão ao script..."
+
+      - chmod +x $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh
+
+  pre_build:
+    commands:
+      - echo "Pre-build phase"
 
   build:
     commands:
-      - echo "Rodando análise de dependências..."
-      - mkdir -p reports/
-      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey 4a090b91-1ff3-46ec-96be-beaa3528f734 --nvdApiDelay 10000
-
+      - echo "Testando conexão manual com API da NVD usando a chave..."
+      - curl -H "apiKey:$NVD_API_KEY" "https://services.nvd.nist.gov/rest/json/cves/2.0" || echo "Erro ao acessar API manualmente"
+      - echo "Rodando análise de dependências no modo DEBUG..."
+      - echo "API Key configurada:${NVD_API_KEY:-'NÃO CONFIGURADA'}"
+      - env | grep NVD  # Mostra se a variável está definida corretamente
+      - mkdir -p reports  # Garante que o diretório existe antes de rodar
+      - echo "Verificando versão do OWASP Dependency Check..."
+      - $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh --version
+      - echo "Executando análise com logs detalhados..."
+      - DEPCHECK_DIR=$(find . -type d -name "dependency-check*" | head -n 1)
+      - DEPCHECK_DIR="./app/dependency-check/bin/dependency-check.sh" \
+          --project "meu-projeto" \
+          --scan "." \
+          --format "HTML" \
+          --out "reports/" \
+          --nvdApiKey="$NVD_API_KEY" \
+          --nvdApiDelay 2000 \
+          --log "reports/dependency-check.log" \
+          --debug || echo "Falha na análise de dependências, verificar logs."
+    
   post_build:
     commands:
-      - echo "Análise concluída! Verificando se o diretório reports/ existe..."
-      - if [ -d "reports/" ]; then aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886/ --recursive; else echo "Diretório reports/ não encontrado."; fi
+      - echo "Análise concluída! Salvando resultados..."
+      - mkdir -p reports  # Garante que o diretório existe
+      - ls -lah reports/  # Lista os arquivos antes do upload
+      - aws s3 cp reports/ s3://pipeline5-trabalho-d --recursive || echo "Nenhum relatório encontrado para upload."
+
+artifacts:
+  files:
+    - '**/*'  # Inclui todos os arquivos e subpastas recursivamente
