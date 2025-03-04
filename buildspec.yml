@@ -16,6 +16,10 @@ phases:
       - ls -R
       - echo "Dando permissão ao script..."
       - chmod +x $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh
+      - echo "Verificando permissões do script..."
+      - ls -l $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh
+      - echo "Verificando instalação do Java..."
+      - java -version
 
   pre_build:
     commands:
@@ -49,7 +53,7 @@ phases:
         fi
       - echo "Rodando análise de dependências..."
       - mkdir -p reports/
-      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 10000
+      - $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 10000
 
   post_build:
     commands:
