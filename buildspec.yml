@@ -24,36 +24,51 @@ phases:
   build:
     commands:
       - echo "Testando conexão manual com API da NVD usando a chave..."
-      - >
-        curl -H "apiKey:$NVD_API_KEY" "https://services.nvd.nist.gov/rest/json/cves/2.0" || 
-        echo "Erro ao acessar API manualmente"
+      - curl -H "apiKey:$NVD_API_KEY" "https://services.nvd.nist.gov/rest/json/cves/2.0" || echo "Erro ao acessar API manualmente"
+      
       - echo "Rodando análise de dependências no modo DEBUG..."
       - echo "API Key configurada:${NVD_API_KEY:-'NÃO CONFIGURADA'}"
       - env | grep NVD
-      - mkdir -p reports  # Cria o diretório de relatórios, caso não exista
-      - echo "Verificando estrutura de diretórios..."
-      - ls -lah .
-      - find . -type d -name "dependency-check*"  # Lista os diretórios encontrados para verificar se o caminho está correto
-      - echo "Definindo caminho correto para OWASP Dependency-Check..."
-      - export DEPCHECK_DIR=$(find . -type d -name "dependency-check*" | head -n 1)
-      - echo "DEPCHECK_DIR definido como:$DEPCHECK_DIR"
-      - echo "Dando permissão ao script..."
-      - chmod +x $DEPCHECK_DIR/bin/dependency-check.sh
-      - echo "Verificando versão do OWASP Dependency-Check..."
-      - $DEPCHECK_DIR/bin/dependency-check.sh --version
-      - >
-        $DEPCHECK_DIR/bin/dependency-check.sh --project "meu-projeto" --scan "." --format "HTML" --out "reports/" 
-        --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 2000 --log "reports/dependency-check.log" --debug || 
-        echo "Falha na análise de dependências, verificar logs."
 
+      - mkdir -p reports
+      - echo "Verificando versão do OWASP Dependency Check..."
+      
+      # Adicionando logs de depuração
+      - ls -lah ./app/dependency-check/bin/
+      
+      # Garantindo permissão de execução
+      - chmod +x ./app/dependency-check/bin/dependency-check.sh
+      - ./app/dependency-check/bin/dependency-check.sh --version
+      
+      - echo "Executando análise com logs detalhados..."
+      - ./app/dependency-check/bin/dependency-check.sh \
+          --project "meu-projeto" \
+          --scan "." \
+          --format "HTML" \
+          --out "reports/" \
+          --nvdApiKey "$NVD_API_KEY" \
+          --nvdApiDelay 2000 \
+          --log "reports/dependency-check.log" \
+          
+
+
+         # - DEPCHECK_DIR="./app/dependency-check/bin/dependency-check.sh" \  # Caminho para o script de análise
+         #     --project "meu-projeto" \  # Nome do projeto analisado
+         #     --scan "." \  # Define o diretório a ser analisado
+         #     --format "HTML" \  # Formato do relatório
+         #     --out "reports/" \  # Diretório de saída dos relatórios
+         #     --nvdApiKey="$NVD_API_KEY" \  # Usa a API Key configurada
+         #     --nvdApiDelay 2000 \  # Tempo de espera entre requisições à API
+         #     --log "reports/dependency-check.log" \  # Define o arquivo de log
+         #     --debug || echo "Falha na análise de dependências, verificar logs."  # Habilita modo debug e captura erro, se houver
+
+    
   post_build:
     commands:
       - echo "Análise concluída! Salvando resultados..."  # Mensagem informativa
       - mkdir -p reports  # Garante que o diretório de relatórios existe
       - ls -lah reports/  # Lista os arquivos gerados para verificar se estão corretos
-      - >
-        aws s3 cp reports/ s3://laddevops --recursive || 
-        echo "Nenhum relatório encontrado para upload."  # Faz upload dos relatórios para um bucket S3
+      - aws s3 cp reports/ s3://pipeline5-trabalho-d --recursive || echo "Nenhum relatório encontrado para upload."  # Faz upload dos relatórios para um bucket S3
 
 artifacts:
   files:
