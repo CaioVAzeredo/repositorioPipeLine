@@ -47,3 +47,16 @@ phases:
         else
           echo "AVISO: NVD_API_KEY não está definida. Pulando teste de conexão com a API da NVD."
         fi
+      - echo "Rodando análise de dependências..."
+      - mkdir -p reports/
+      - dependency-check.sh --project "meu-projeto" --scan . --format HTML --out reports/ --nvdApiKey "$NVD_API_KEY" --nvdApiDelay 10000
+
+  post_build:
+    commands:
+      - echo "Análise concluída! Verificando se o diretório reports/ existe..."
+      - if [ -d "reports/" ]; then
+          echo "Enviando relatórios para o bucket S3..."
+          aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886/reports/ --recursive
+        else
+          echo "AVISO: Diretório reports/ não encontrado. Nenhum relatório foi enviado para o S3."
+        fi
