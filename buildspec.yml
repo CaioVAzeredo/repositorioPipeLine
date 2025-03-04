@@ -23,13 +23,15 @@ phases:
       - echo "Listando todas as variáveis de ambiente para depuração:"
       - env | sort  # Lista todas as variáveis de ambiente para depuração
       - echo "Verificando se a variável NVD_API_KEY está definida..."
-      - if env | grep -q "NVD_API_KEY"; then
+      - |
+        if env | grep -q "NVD_API_KEY"; then
           echo "Variável NVD_API_KEY encontrada."
         else
           echo "AVISO: Variável NVD_API_KEY não está definida."
           echo "Continuando sem a variável NVD_API_KEY..."
         fi
-      - if [ -z "$NVD_API_KEY" ]; then
+      - |
+        if [ -z "$NVD_API_KEY" ]; then
           echo "ERRO: A variável NVD_API_KEY está vazia ou não definida!"
           exit 1
         else
@@ -39,7 +41,8 @@ phases:
   build:
     commands:
       - echo "Testando conexão manual com API da NVD..."
-      - if [ -n "$NVD_API_KEY" ]; then
+      - |
+        if [ -n "$NVD_API_KEY" ]; then
           curl -H "apiKey:$NVD_API_KEY" https://services.nvd.nist.gov/rest/json/cve/1.0
         else
           echo "AVISO: NVD_API_KEY não está definida. Pulando teste de conexão com a API da NVD."
