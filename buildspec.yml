@@ -4,7 +4,7 @@ phases:
   install:
     runtime-versions:
       nodejs: 14
-      java: corretto17  
+      java: corretto17
     commands:
       - echo "Installing NPM dependencies..."
       - npm install
@@ -13,44 +13,34 @@ phases:
       - yum install -y unzip || apt-get install -y unzip
       - unzip dependency-check-9.0.9-release.zip
       - echo "Verificando diretórios extraídos..."
-      - ls -R  # Mostra todos os arquivos extraídos para depuração
+      - ls -R
       - echo "Dando permissão ao script..."
-
       - chmod +x $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh
 
   pre_build:
     commands:
-      - echo "Pre-build phase"
+      - echo "Verificando variáveis de ambiente..."
+      - echo "Listando todas as variáveis de ambiente para depuração:"
+      - env | sort  # Lista todas as variáveis de ambiente para depuração
+      - echo "Verificando se a variável NVD_API_KEY está definida..."
+      - if env | grep -q "NVD_API_KEY"; then
+          echo "Variável NVD_API_KEY encontrada."
+        else
+          echo "AVISO: Variável NVD_API_KEY não está definida."
+          echo "Continuando sem a variável NVD_API_KEY..."
+        fi
+      - if [ -z "$NVD_API_KEY" ]; then
+          echo "ERRO: A variável NVD_API_KEY está vazia ou não definida!"
+          exit 1
+        else
+          echo "Variável NVD_API_KEY está definida e pronta para uso."
+        fi
 
   build:
     commands:
-      - echo "Testando conexão manual com API da NVD usando a chave..."
-      - curl -H "apiKey:$NVD_API_KEY" "https://services.nvd.nist.gov/rest/json/cves/2.0" || echo "Erro ao acessar API manualmente"
-      - echo "Rodando análise de dependências no modo DEBUG..."
-      - echo "API Key configurada:${NVD_API_KEY:-'NÃO CONFIGURADA'}"
-      - env | grep NVD  # Mostra se a variável está definida corretamente
-      - mkdir -p reports  # Garante que o diretório existe antes de rodar
-      - echo "Verificando versão do OWASP Dependency Check..."
-      - $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh --version
-      - echo "Executando análise com logs detalhados..."
-      - DEPCHECK_DIR=$(find . -type d -name "dependency-check*" | head -n 1)
-      - DEPCHECK_DIR="./app/dependency-check/bin/dependency-check.sh" \
-          --project "meu-projeto" \
-          --scan "." \
-          --format "HTML" \
-          --out "reports/" \
-          --nvdApiKey="$NVD_API_KEY" \
-          --nvdApiDelay 2000 \
-          --log "reports/dependency-check.log" \
-          --debug || echo "Falha na análise de dependências, verificar logs."
-    
-  post_build:
-    commands:
-      - echo "Análise concluída! Salvando resultados..."
-      - mkdir -p reports  # Garante que o diretório existe
-      - ls -lah reports/  # Lista os arquivos antes do upload
-      - aws s3 cp reports/ s3://pipeline5-trabalho-d --recursive || echo "Nenhum relatório encontrado para upload."
-
-artifacts:
-  files:
-    - '**/*'  # Inclui todos os arquivos e subpastas recursivamente
+      - echo "Testando conexão manual com API da NVD..."
+      - if [ -n "$NVD_API_KEY" ]; then
+          curl -H "apiKey:$NVD_API_KEY" https://services.nvd.nist.gov/rest/json/cve/1.0
+        else
+          echo "AVISO: NVD_API_KEY não está definida. Pulando teste de conexão com a API da NVD."
+        fi
