@@ -6,42 +6,46 @@ phases:
       nodejs: 14  # Define a versão do Node.js a ser usada
       java: corretto17  # Define a versão do Java (Amazon Corretto 17)
     commands:
-      - echo "Installing NPM dependencies..."  # Mensagem informativa no terminal
-      - npm install  # Instala as dependências do Node.js listadas no package.json
-      - echo "Instalando OWASP Dependency-Check..."  # Exibe mensagem informativa
-      - curl -sLO https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip  # Baixa o OWASP Dependency-Check
-      - yum install -y unzip || apt-get install -y unzip  # Instala o unzip, compatível com diferentes distribuições Linux
-      - unzip dependency-check-9.0.9-release.zip  # Extrai o arquivo baixado
-      - echo "Verificando diretórios extraídos..."  # Mensagem de depuração
-      - ls -R  # Lista recursivamente os arquivos extraídos
-      - echo "Dando permissão ao script..."  # Mensagem informativa
-      - chmod +x $(find . -type d -name "dependency-check*" | head -n 1)/bin/dependency-check.sh  # Concede permissão de execução ao script
+      - echo "Installing NPM dependencies..."
+      - npm install
+      - echo "Instalando OWASP Dependency-Check..."
+      - curl -sLO https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
+      - yum install -y unzip || apt-get install -y unzip
+      - unzip dependency-check-9.0.9-release.zip
+      - echo "Verificando estrutura de diretórios após extração..."
+      - ls -lah .
+      - find . -type d -name "dependency-check*"  # Verifica onde o Dependency-Check foi extraído
 
   pre_build:
     commands:
-      - echo "Pre-build phase"  # Exibe mensagem informativa sobre a fase pré-build
+      - echo "Pre-build phase"
 
   build:
     commands:
       - echo "Testando conexão manual com API da NVD usando a chave..."
       - curl -H "apiKey:$NVD_API_KEY" "https://services.nvd.nist.gov/rest/json/cves/2.0" || echo "Erro ao acessar API manualmente"
-      
+
       - echo "Rodando análise de dependências no modo DEBUG..."
       - echo "API Key configurada:${NVD_API_KEY:-'NÃO CONFIGURADA'}"
       - env | grep NVD
 
       - mkdir -p reports
       - echo "Verificando versão do OWASP Dependency Check..."
-      
-      # Adicionando logs de depuração
-      - ls -lah ./app/dependency-check/bin/
-      
+
+      # Define o caminho correto para o Dependency-Check
+      - export DEP_CHECK_DIR=$(find . -type d -name "dependency-check*" | head -n 1)
+      - echo "Dependency-Check encontrado em: $DEP_CHECK_DIR"
+
+      # Lista os arquivos para depuração
+      - ls -lah $DEP_CHECK_DIR/bin/
+
       # Garantindo permissão de execução
-      - chmod +x ./app/dependency-check/bin/dependency-check.sh
-      - ./app/dependency-check/bin/dependency-check.sh --version
-      
+      - chmod +x $DEP_CHECK_DIR/bin/dependency-check.sh
+      - $DEP_CHECK_DIR/bin/dependency-check.sh --version
+
       - echo "Executando análise com logs detalhados..."
-      - ./app/dependency-check/bin/dependency-check.sh \
+      - |
+        $DEP_CHECK_DIR/bin/dependency-check.sh \
           --project "meu-projeto" \
           --scan "." \
           --format "HTML" \
@@ -49,27 +53,15 @@ phases:
           --nvdApiKey "$NVD_API_KEY" \
           --nvdApiDelay 2000 \
           --log "reports/dependency-check.log" \
-          
+          --debug || echo "Falha na análise de dependências, verificar logs."
 
-
-         # - DEPCHECK_DIR="./app/dependency-check/bin/dependency-check.sh" \  # Caminho para o script de análise
-         #     --project "meu-projeto" \  # Nome do projeto analisado
-         #     --scan "." \  # Define o diretório a ser analisado
-         #     --format "HTML" \  # Formato do relatório
-         #     --out "reports/" \  # Diretório de saída dos relatórios
-         #     --nvdApiKey="$NVD_API_KEY" \  # Usa a API Key configurada
-         #     --nvdApiDelay 2000 \  # Tempo de espera entre requisições à API
-         #     --log "reports/dependency-check.log" \  # Define o arquivo de log
-         #     --debug || echo "Falha na análise de dependências, verificar logs."  # Habilita modo debug e captura erro, se houver
-
-    
   post_build:
     commands:
-      - echo "Análise concluída! Salvando resultados..."  # Mensagem informativa
-      - mkdir -p reports  # Garante que o diretório de relatórios existe
-      - ls -lah reports/  # Lista os arquivos gerados para verificar se estão corretos
-      - aws s3 cp reports/ s3://laddevops --recursive || echo "Nenhum relatório encontrado para upload."  # Faz upload dos relatórios para um bucket S3
+      - echo "Análise concluída! Salvando resultados..."
+      - mkdir -p reports
+      - ls -lah reports/
+      - aws s3 cp reports/ s3://pipeline5-trabalho-d --recursive || echo "Nenhum relatório encontrado para upload."
 
 artifacts:
   files:
-    - '**/*'  # Inclui todos os arquivos
+    - '**/*'
