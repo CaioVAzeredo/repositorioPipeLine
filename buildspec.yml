@@ -72,4 +72,4 @@ phases:
 
 artifacts:
   files:
-    - '**/*'  # Inclui todos os arquivos e diretórios gerados
+    - '**/*'  # Inclui todos os arquivos
