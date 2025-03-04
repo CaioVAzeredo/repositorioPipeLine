@@ -21,7 +21,7 @@ phases:
     commands:
       - echo "Verificando variáveis de ambiente..."
       - echo "Listando todas as variáveis de ambiente para depuração:"
-      - env | sort  # Lista todas as variáveis de ambiente para depuração
+      - env | sort  
       - echo "Verificando se a variável NVD_API_KEY está definida..."
       - |
         if env | grep -q "NVD_API_KEY"; then
