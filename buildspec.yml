@@ -61,7 +61,7 @@ commands:
       - |
         if [ -d "reports/" ]; then
           echo "Enviando relatórios para o bucket S3..."
-          aws s3 cp reports/ s3://laddevops/reports/ --recursive
+          aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886/reports/ --recursive
         else
           echo "AVISO: Diretório reports/ não encontrado. Nenhum relatório foi enviado para o S3."
         fi
