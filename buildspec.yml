@@ -54,7 +54,8 @@ phases:
   post_build:
     commands:
       - echo "Análise concluída! Verificando se o diretório reports/ existe..."
-      - if [ -d "reports/" ]; then
+      - |
+        if [ -d "reports/" ]; then
           echo "Enviando relatórios para o bucket S3..."
           aws s3 cp reports/ s3://codepipeline-us-east-2-106173377886/reports/ --recursive
         else
